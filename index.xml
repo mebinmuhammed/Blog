@@ -1,0 +1,1383 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss  xmlns:atom="http://www.w3.org/2005/Atom" 
+      xmlns:media="http://search.yahoo.com/mrss/" 
+      xmlns:content="http://purl.org/rss/1.0/modules/content/" 
+      xmlns:dc="http://purl.org/dc/elements/1.1/" 
+      version="2.0">
+<channel>
+<title>Math_behind_Velocity Norms</title>
+<link>https://your-website-url.example.com/</link>
+<atom:link href="https://your-website-url.example.com/index.xml" rel="self" type="application/rss+xml"/>
+<description>A blog built with Quarto</description>
+<generator>quarto-1.10.18</generator>
+<lastBuildDate>Sun, 04 Oct 2026 22:00:00 GMT</lastBuildDate>
+<item>
+  <title>From Z-scores to the Conditional SDS Gain</title>
+  <dc:creator>Mebin Muhammed HS</dc:creator>
+  <link>https://your-website-url.example.com/posts/conditional_sds_gain/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<p>A growth chart is good at telling a parent <strong>where</strong> a child is. It is much worse at telling whether the child’s <strong>growth</strong> has been normal. This post is my set of study notes on one paper that tackles exactly this:</p>
+<blockquote class="blockquote">
+<p>van Buuren S. (2023). <em>Evaluation and prediction of individual growth trajectories.</em> Annals of Human Biology, 50(1), 247–257. <a href="https://doi.org/10.1080/03014460.2023.2190619">doi:10.1080/03014460.2023.2190619</a> (open access, CC BY 4.0)</p>
+</blockquote>
+<p>The paper builds a yardstick for individual growth, the <strong>conditional SDS gain</strong>, one fix at a time. I wrote these notes as a sequence of questions that came up while reading, and I answer each with a short derivation and a numerical example.</p>
+<ul>
+<li><strong>Part I</strong> explains the concepts in order, from raw velocity to the conditional SDS gain.</li>
+<li><strong>Part II</strong> collects the questions that, for me, made the ideas click. Each answer contains a proof or derivation and a worked example.</li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>How to read the numbers
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>Numbers marked <em>(illustrative)</em> are round numbers I chose to make an idea easy to see. They are not real growth-reference values.</li>
+<li>Correlations labelled “Table 2” come from the paper (SMOCC study, height correlations between ages in months).</li>
+<li>Everything else I computed myself, and checked with a simulation. The code is in the appendix.</li>
+<li>I use “healthy” loosely for “a child from the reference population who is growing normally”. The reference sample in the paper is a representative sample of Dutch children, not a screened-healthy group.</li>
+</ul>
+</div>
+</div>
+<section id="part-1" class="level1">
+<h1>Part I: The concepts</h1>
+<section id="the-problem-where-a-child-is-is-not-how-the-child-is-growing" class="level2">
+<h2 class="anchored" data-anchor-id="the-problem-where-a-child-is-is-not-how-the-child-is-growing">1. The problem: where a child is is not how the child is growing</h2>
+<p>A conventional growth chart is a <strong>distance reference</strong>. It shows how size varies with age and sex, so you can read off where a child stands among peers. Two things limit it for individual follow-up:</p>
+<ul>
+<li>Differences in the <em>tempo</em> of growth between children can make distance references biased and inefficient for studying individual growth, especially during puberty.</li>
+<li>What clinicians want to detect is usually <strong>unexpected change</strong> (failure to thrive, slow persistent deceleration, developmental delay), and a single position on a chart does not measure change.</li>
+</ul>
+<p>So we need a number for <em>change</em> that can be read the same way at any age, for any interval between visits, and for any starting point. The paper gets there in four steps: velocity <img src="https://latex.codecogs.com/png.latex?V">, velocity in SDS units <img src="https://latex.codecogs.com/png.latex?W">, the unconditional SDS gain <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D">, and finally the conditional SDS gain <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D">.</p>
+</section>
+<section id="notation-and-the-standing-assumption" class="level2">
+<h2 class="anchored" data-anchor-id="notation-and-the-standing-assumption">2. Notation and the standing assumption</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Symbol</th>
+<th style="text-align: left;">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?Y_t"></td>
+<td style="text-align: left;">Raw measurement (for example length in cm) at age <img src="https://latex.codecogs.com/png.latex?T_t"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?Z_t"></td>
+<td style="text-align: left;">SDS (Z-score) of <img src="https://latex.codecogs.com/png.latex?Y_t"> for the child’s age and sex</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?r"></td>
+<td style="text-align: left;">Correlation between <img src="https://latex.codecogs.com/png.latex?Z_1"> and <img src="https://latex.codecogs.com/png.latex?Z_2"> for the two ages <img src="https://latex.codecogs.com/png.latex?T_1"> and <img src="https://latex.codecogs.com/png.latex?T_2"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?%5CPhi"></td>
+<td style="text-align: left;">Standard normal cumulative distribution function</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?%5Csigma_u">, <img src="https://latex.codecogs.com/png.latex?%5Csigma_g"></td>
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?%5Csqrt%7B2-2r%7D"> and <img src="https://latex.codecogs.com/png.latex?%5Csqrt%7B1-r%5E2%7D"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?L=%5C%7BD,R%5C%7D"></td>
+<td style="text-align: left;">Longitudinal reference: a distance reference <img src="https://latex.codecogs.com/png.latex?D"> plus a time-to-time correlation matrix <img src="https://latex.codecogs.com/png.latex?R"></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Standing assumption (A).</strong> For children in the reference population, <img src="https://latex.codecogs.com/png.latex?(Z_1,%20Z_2)"> is bivariate normal with <img src="https://latex.codecogs.com/png.latex?E%5BZ_1%5D=E%5BZ_2%5D=0">, <img src="https://latex.codecogs.com/png.latex?%5Coperatorname%7BVar%7D(Z_1)=%5Coperatorname%7BVar%7D(Z_2)=1"> and <img src="https://latex.codecogs.com/png.latex?%5Coperatorname%7BCorr%7D(Z_1,Z_2)=r">, with <img src="https://latex.codecogs.com/png.latex?%7Cr%7C%3C1">. Every proof below uses only this.</p>
+</section>
+<section id="sec-sds" class="level2">
+<h2 class="anchored" data-anchor-id="sec-sds">3. Step 0: Z-scores (SDS) put sizes on one ruler</h2>
+<p>A raw size means different things at different ages. A Z-score compares the child with the reference for the <strong>same age and sex</strong> and counts how many reference standard deviations away the child is:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AZ=%5Cfrac%7BY-%5Cmu(%5Ctext%7Bage%7D,%5Ctext%7Bsex%7D)%7D%7B%5Csigma(%5Ctext%7Bage%7D,%5Ctext%7Bsex%7D)%7D%0A"></p>
+<p><strong>What a standard deviation is.</strong> It is the typical distance of individuals from the mean, in the units of the data. Take five newborn lengths, 48, 50, 50, 50 and 52 cm. The mean is 50, the squared deviations are 4, 0, 0, 0, 4, their average is 1.6, so the SD is <img src="https://latex.codecogs.com/png.latex?%5Csqrt%7B1.6%7D%5Capprox%201.26"> cm.</p>
+<p><strong>What a Z-score means.</strong> If the reference is approximately normal, a Z-value corresponds to a fixed percentile at every age:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: right;">Z</th>
+<th style="text-align: right;">Share of the reference below this value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">−2</td>
+<td style="text-align: right;">2.3%</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">−1.645</td>
+<td style="text-align: right;">5.0%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">−1</td>
+<td style="text-align: right;">15.9%</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">50%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">+1</td>
+<td style="text-align: right;">84.1%</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">+2</td>
+<td style="text-align: right;">97.7%</td>
+</tr>
+</tbody>
+</table>
+<p>“Mean 0 and SD 1” describes the <strong>reference population</strong> after the transformation. An individual child has one Z value, and that value is the number of reference SDs above or below the mean.</p>
+<section id="before-and-after-converting-illustrative" class="level3">
+<h3 class="anchored" data-anchor-id="before-and-after-converting-illustrative">Before and after converting (illustrative)</h3>
+<p>Suppose these are the reference values for girls’ length:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Age</th>
+<th style="text-align: right;">Reference mean (cm)</th>
+<th style="text-align: right;">Reference SD (cm)</th>
+<th style="text-align: left;">Middle 68% (mean ± 1 SD)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Birth</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">2.0</td>
+<td style="text-align: left;">48.0 to 52.0 (4.0 cm wide)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">6 months</td>
+<td style="text-align: right;">66</td>
+<td style="text-align: right;">2.3</td>
+<td style="text-align: left;">63.7 to 68.3 (4.6 cm wide)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">12 months</td>
+<td style="text-align: right;">74</td>
+<td style="text-align: right;">2.6</td>
+<td style="text-align: left;">71.4 to 76.6 (5.2 cm wide)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">24 months</td>
+<td style="text-align: right;">86</td>
+<td style="text-align: right;">3.2</td>
+<td style="text-align: left;">82.8 to 89.2 (6.4 cm wide)</td>
+</tr>
+</tbody>
+</table>
+<p>In centimetres, both the average (50 to 86) and the spread (2 to 3.2) move with age. So “3 cm above average” means different things at different ages.</p>
+<p><strong>Example A: the same +3 cm at different ages.</strong> Emma is 53 cm at birth and Lena is 89 cm at 24 months. Both are 3 cm above the average for their age.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AZ_%7B%5Ctext%7BEmma%7D%7D=%5Cfrac%7B53-50%7D%7B2.0%7D=+1.50%5C;(93%5Ctext%7Brd%20centile%7D),%5Cqquad%0AZ_%7B%5Ctext%7BLena%7D%7D=%5Cfrac%7B89-86%7D%7B3.2%7D=+0.94%5C;(83%5Ctext%7Brd%20centile%7D)%0A"></p>
+<p>In centimetres the two look identical. In Z-scores Emma is clearly the more unusual of the two.</p>
+<p><strong>Example B: following one child.</strong> A girl who measures 50, 66, 74 and 86 cm at birth, 6, 12 and 24 months has the Z-scores <img src="https://latex.codecogs.com/png.latex?0,%200,%200,%200">. She is growing exactly along the median. A second girl with 50 cm at birth and 71.4 cm at 12 months grew 21.4 cm, which looks like a lot, but <img src="https://latex.codecogs.com/png.latex?Z=(71.4-74)/2.6=-1.0">. She has fallen from the 50th to the 16th centile. Only the Z-scale shows this.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>What Z-scores do and do not give you
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Z-scores make <strong>size</strong> comparable across ages. They say nothing about <strong>change</strong>. The rest of the post is about measuring change.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="step-1-velocity-v" class="level2">
+<h2 class="anchored" data-anchor-id="step-1-velocity-v">4. Step 1: Velocity <img src="https://latex.codecogs.com/png.latex?V"></h2>
+<p><img src="https://latex.codecogs.com/png.latex?%0AV=%5Cfrac%7BY_2-Y_1%7D%7BT_2-T_1%7D%0A"></p>
+<p>Velocity is easy to compute (for example cm per year) and a low value shows up on a growth chart as a downward centile crossing. But a normal velocity depends on age and sex (fast in infancy, slower later, a spurt in puberty), and so does its spread. A single velocity number cannot be read without an age- and sex-specific reference.</p>
+</section>
+<section id="sec-w" class="level2">
+<h2 class="anchored" data-anchor-id="sec-w">5. Step 2: Velocity in SDS units <img src="https://latex.codecogs.com/png.latex?W"></h2>
+<p>Replace sizes by Z-scores:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AW=%5Cfrac%7BZ_2-Z_1%7D%7BT_2-T_1%7D%5Cqquad(%5Ctext%7BSDS%20per%20year%7D)%0A"></p>
+<p>This removes the dependence of the <strong>level</strong> on age and sex. But the <strong>variability of the change</strong> still depends on the interval, because it depends on <img src="https://latex.codecogs.com/png.latex?r">:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Coperatorname%7BVar%7D(Z_2-Z_1)=1+1-2r=2-2r,%5Cqquad%0A%5Coperatorname%7BSD%7D(W)=%5Cfrac%7B%5Csqrt%7B2-2r%7D%7D%7BT_2-T_1%7D%0A"></p>
+<p>Over a short gap, or later in childhood, children keep their centile and <img src="https://latex.codecogs.com/png.latex?r"> is high, so even small changes are unusual. In infancy children reshuffle more, so <img src="https://latex.codecogs.com/png.latex?r"> is lower and bigger changes are normal. Here is the same slope of <img src="https://latex.codecogs.com/png.latex?-1"> SDS per year at three different times (correlations from Table 2, height):</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Interval</th>
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?r"></th>
+<th style="text-align: right;">SD of <img src="https://latex.codecogs.com/png.latex?W"> (SDS/year)</th>
+<th style="text-align: right;">A slope of −1 SDS/year is</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Month 1 to 2</td>
+<td style="text-align: right;">0.856</td>
+<td style="text-align: right;">6.44</td>
+<td style="text-align: right;">−0.16 SD from “no change” (noise)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Month 0 to 12</td>
+<td style="text-align: right;">0.440</td>
+<td style="text-align: right;">1.06</td>
+<td style="text-align: right;">−0.94 SD (normal)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Month 12 to 24</td>
+<td style="text-align: right;">0.818</td>
+<td style="text-align: right;">0.60</td>
+<td style="text-align: right;">−1.66 SD (unusual)</td>
+</tr>
+</tbody>
+</table>
+<p>The same number leads to different conclusions, so <img src="https://latex.codecogs.com/png.latex?W"> cannot be read at face value. The distribution of <img src="https://latex.codecogs.com/png.latex?W"> depends on <img src="https://latex.codecogs.com/png.latex?T_1"> and <img src="https://latex.codecogs.com/png.latex?T_2">.</p>
+</section>
+<section id="sec-zu" class="level2">
+<h2 class="anchored" data-anchor-id="sec-zu">6. Step 3: The unconditional SDS gain <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"></h2>
+<p>Cole (1995) proposed standardising the change by its own standard deviation:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AZ%5E%7Bu%7D=%5Cfrac%7BZ_2-Z_1%7D%7B%5Csigma_u%7D,%5Cqquad%20%5Csigma_u=%5Csqrt%7B2-2r%7D%0A"></p>
+<p>Under (A), <img src="https://latex.codecogs.com/png.latex?Z_2-Z_1"> is normal with mean 0 and variance <img src="https://latex.codecogs.com/png.latex?2-2r">, so <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D%5Csim%20N(0,1)"> <strong>for every pair of ages</strong>. The dependence on the gap and on the age is absorbed into <img src="https://latex.codecogs.com/png.latex?r">, which is looked up for the specific pair of ages.</p>
+<p>To flag the 5% most extreme changes you flag when <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D%3C-1.645">, which is the same as flagging when <img src="https://latex.codecogs.com/png.latex?Z_2-Z_1%3C-1.645%5C,%5Csigma_u">. The drop in <img src="https://latex.codecogs.com/png.latex?Z"> that is needed changes with the interval, and the rule adapts automatically:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Interval</th>
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?r"></th>
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?%5Csigma_u"></th>
+<th style="text-align: right;">Drop in <img src="https://latex.codecogs.com/png.latex?Z"> needed to flag (<img src="https://latex.codecogs.com/png.latex?1.645%5C,%5Csigma_u">)</th>
+<th style="text-align: right;">Healthy children flagged by a fixed rule “drop of 1 SDS or more”</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Month 0 to 3</td>
+<td style="text-align: right;">0.580</td>
+<td style="text-align: right;">0.92</td>
+<td style="text-align: right;">1.51</td>
+<td style="text-align: right;">13.8%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Month 3 to 6</td>
+<td style="text-align: right;">0.803</td>
+<td style="text-align: right;">0.63</td>
+<td style="text-align: right;">1.03</td>
+<td style="text-align: right;">5.6%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Month 1 to 2</td>
+<td style="text-align: right;">0.856</td>
+<td style="text-align: right;">0.54</td>
+<td style="text-align: right;">0.88</td>
+<td style="text-align: right;">3.1%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Month 0 to 12</td>
+<td style="text-align: right;">0.440</td>
+<td style="text-align: right;">1.06</td>
+<td style="text-align: right;">1.74</td>
+<td style="text-align: right;">17.2%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Month 12 to 24</td>
+<td style="text-align: right;">0.818</td>
+<td style="text-align: right;">0.60</td>
+<td style="text-align: right;">0.99</td>
+<td style="text-align: right;">4.9%</td>
+</tr>
+</tbody>
+</table>
+<p>A fixed cut-off such as “a drop of 1 SDS” flags between 3% and 17% of healthy children depending on the interval. <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D%3C-1.645"> flags 5% at every interval, by construction. (The percentages assume normality.)</p>
+<p><strong>What <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> solves.</strong> The age and interval dependence of the spread of change. One cut-off now has one meaning everywhere.</p>
+<p><strong>What <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> does not solve.</strong></p>
+<ul>
+<li>It assumes the expected change is <strong>zero</strong> (a child is expected to stay on their centile). That ignores regression to the mean (next section), which is the main flaw.</li>
+<li>It uses only two measurements.</li>
+<li>It is the change over the interval, not a rate per year.</li>
+<li>It needs roughly bivariate normal Z-scores and a trustworthy <img src="https://latex.codecogs.com/png.latex?r"> for the exact pair of ages.</li>
+</ul>
+</section>
+<section id="sec-rtm" class="level2">
+<h2 class="anchored" data-anchor-id="sec-rtm">7. Regression to the mean</h2>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Analogy
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If you score 90 on a test where the class average is 70, and the test is only a partly reliable measure of your ability, the best guess for your next score is not 90. Part of that 90 was luck, so you pull the guess back toward the average, in proportion to how unreliable the test is.</p>
+</div>
+</div>
+<p>For standardised variables with correlation <img src="https://latex.codecogs.com/png.latex?r">, the best prediction of <img src="https://latex.codecogs.com/png.latex?Z_2"> given <img src="https://latex.codecogs.com/png.latex?Z_1"> is</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AE%5BZ_2%5Cmid%20Z_1%5D=r%5C,Z_1%0A"></p>
+<p>so the expected change is <img src="https://latex.codecogs.com/png.latex?(r-1)Z_1">. A child who starts below average (negative <img src="https://latex.codecogs.com/png.latex?Z_1">) is expected to rise, and one who starts above average is expected to fall. If <img src="https://latex.codecogs.com/png.latex?r=1"> nothing regresses. If <img src="https://latex.codecogs.com/png.latex?r=0"> the child is fully pulled back to 0. With <img src="https://latex.codecogs.com/png.latex?r=0.7"> and <img src="https://latex.codecogs.com/png.latex?Z_1=-2">, the expected next value is <img src="https://latex.codecogs.com/png.latex?-1.4"> and the expected gain is <img src="https://latex.codecogs.com/png.latex?+0.6">.</p>
+<p>The paper stresses that this variation comes partly from measurement error and partly from real biological differences in growth.</p>
+</section>
+<section id="sec-zg" class="level2">
+<h2 class="anchored" data-anchor-id="sec-zg">8. Step 4: The conditional SDS gain <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"></h2>
+<p>The fix is to compare the child with what was <strong>expected given where they started</strong>, and not with where they started:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AZ%5E%7Bg%7D=%5Cfrac%7BZ_2-r%5C,Z_1%7D%7B%5Csigma_g%7D,%5Cqquad%20%5Csigma_g=%5Csqrt%7B1-r%5E%7B2%7D%7D%0A"></p>
+<p>The recipe has three parts:</p>
+<ol type="1">
+<li><strong>Predict</strong> the next Z-score by shrinking the previous one toward 0: <img src="https://latex.codecogs.com/png.latex?%5Chat%20Z_2=r%5C,Z_1">.</li>
+<li><strong>Take the surprise</strong>, the actual minus the predicted value: <img src="https://latex.codecogs.com/png.latex?Z_2-r%5C,Z_1">.</li>
+<li><strong>Scale</strong> it by the typical size of that surprise, <img src="https://latex.codecogs.com/png.latex?%5Csqrt%7B1-r%5E2%7D">. This is the variance left over after <img src="https://latex.codecogs.com/png.latex?Z_1"> has explained a share <img src="https://latex.codecogs.com/png.latex?r%5E2"> of the variance of <img src="https://latex.codecogs.com/png.latex?Z_2">.</li>
+</ol>
+<p>Under (A), <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D%5Csim%20N(0,1)"> for every starting value <img src="https://latex.codecogs.com/png.latex?Z_1">. This is proved in Q6.</p>
+<section id="worked-example-the-papers-figure-1-child" class="level3">
+<h3 class="anchored" data-anchor-id="worked-example-the-papers-figure-1-child">Worked example: the paper’s Figure 1 child</h3>
+<p>A girl has length 58 cm at 2 months and 65 cm at 6 months, and Table 2 gives <img src="https://latex.codecogs.com/png.latex?r=0.745"> for these ages. Reading her Z-scores off the paper’s Figure 1 (approximately), <img src="https://latex.codecogs.com/png.latex?Z_2%5Capprox+0.57"> and <img src="https://latex.codecogs.com/png.latex?Z_6%5Capprox-0.62">.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Quantity</th>
+<th style="text-align: left;">Calculation</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Predicted <img src="https://latex.codecogs.com/png.latex?Z_6"></td>
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?0.745%5Ctimes0.57"></td>
+<td style="text-align: right;">0.425</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Surprise</td>
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?-0.62-0.425"></td>
+<td style="text-align: right;">−1.045</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?%5Csigma_g"></td>
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?%5Csqrt%7B1-0.745%5E2%7D"></td>
+<td style="text-align: right;">0.667</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"></td>
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?-1.045/0.667"></td>
+<td style="text-align: right;"><strong>−1.57</strong></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> for comparison</td>
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?(-0.62-0.57)/%5Csqrt%7B2-2(0.745)%7D"></td>
+<td style="text-align: right;">−1.67</td>
+</tr>
+</tbody>
+</table>
+<p>The paper reports <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D=-1.57">, just above the thrive line at <img src="https://latex.codecogs.com/png.latex?-1.645">, so she is not flagged. <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> would flag her, because she started above average (<img src="https://latex.codecogs.com/png.latex?Z_2=+0.57">) and some drop was expected.</p>
+<p>The difference between the two rules is exactly the regression-to-the-mean term. Rewrite the numerator of <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D">:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AZ_2-rZ_1=(Z_2-Z_1)+(1-r)%5C,Z_1%0A"></p>
+<p>The first term is the plain change that <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> uses. The second term is the correction: positive for children who start high (credit for the expected drop) and negative for children who start low (a penalty for not catching up). Here it is <img src="https://latex.codecogs.com/png.latex?0.255%5Ctimes0.57=0.145">, and <img src="https://latex.codecogs.com/png.latex?-1.19+0.145=-1.045">.</p>
+<p>A second child makes the point. Take <img src="https://latex.codecogs.com/png.latex?Z_2=-0.5"> and <img src="https://latex.codecogs.com/png.latex?Z_6=-1.69">, which is the <strong>same drop of 1.19</strong>. Then <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D=-1.67"> again, but <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D=(-1.69+0.3725)/0.667=-1.98">. <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> cannot tell the two children apart, and <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> can. The second child was expected to rise and fell instead.</p>
+</section>
+</section>
+<section id="sec-thrive" class="level2">
+<h2 class="anchored" data-anchor-id="sec-thrive">9. Choosing a cut-off: the thrive line</h2>
+<p>Because <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> is standard normal, a cut-off has a precise meaning: <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D=-1.645"> means that only 5% of reference children grow this badly or worse over that interval. Following Wright et al.&nbsp;(1994), the paper calls this the <strong>thrive line</strong> and uses it as a criterion for finding children with failure to thrive. The 5% level is a convention, not a law:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: right;">Share of reference children flagged</th>
+<th style="text-align: right;">Z cut-off</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">5%</td>
+<td style="text-align: right;">−1.645</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2.5%</td>
+<td style="text-align: right;">−1.960</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1%</td>
+<td style="text-align: right;">−2.326</td>
+</tr>
+</tbody>
+</table>
+<p>A looser cut-off catches more real problems but produces more false alarms. A stricter one does the reverse. Repeated visits make this worse. Over the paper’s 10 visits there are 9 evaluations (birth has no earlier measurement), and at the 5% cut-off the binomial calculation <img src="https://latex.codecogs.com/png.latex?1-0.95%5E%7B9%7D"> predicts that 37.0% of children are flagged at least once. In the real data it was 28.2% for weight and 30.5% for height. With a 1% cut-off the binomial value is 8.6% (8.4% for weight and 8.9% for height observed). That is the multiple-testing problem in the paper’s Table 5. A flag means “look closer”, not “diagnosis”.</p>
+</section>
+<section id="sec-two-phases" class="level2">
+<h2 class="anchored" data-anchor-id="sec-two-phases">10. Reference cohort versus a new child</h2>
+<p><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> works in two phases.</p>
+<p><strong>Phase 1: build the longitudinal reference (once).</strong> From a reference sample of repeatedly measured children (in the paper, 1,895 term-born SMOCC children with at least four visits), convert measurements to Z-scores using a distance reference <img src="https://latex.codecogs.com/png.latex?D"> (the Fourth Dutch Growth Study) and estimate the time-to-time correlations <img src="https://latex.codecogs.com/png.latex?R"> (Table 2). Together they form <img src="https://latex.codecogs.com/png.latex?L=%5C%7BD,R%5C%7D">.</p>
+<p><strong>Phase 2: apply it to a new child.</strong> Convert the child’s measurements to Z-scores with <img src="https://latex.codecogs.com/png.latex?D">, take <img src="https://latex.codecogs.com/png.latex?r"> from <img src="https://latex.codecogs.com/png.latex?R"> (interpolated for other ages by the Cole correlation model), compute the expected value <img src="https://latex.codecogs.com/png.latex?rZ_1">, and compute <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D=(Z_2-rZ_1)/%5Csqrt%7B1-r%5E2%7D">.</p>
+<p>Nothing about the new child is used to estimate <img src="https://latex.codecogs.com/png.latex?r"> or <img src="https://latex.codecogs.com/png.latex?D">. The validity condition is that the child comes from a population like the reference. The paper’s rule of thumb is that the mean Z-score of the target sample should lie within ±0.1 SD.</p>
+</section>
+<section id="at-a-glance" class="level2">
+<h2 class="anchored" data-anchor-id="at-a-glance">11. At a glance</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Measure</th>
+<th style="text-align: left;">What it fixes</th>
+<th style="text-align: left;">What remains</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?V"> (cm/year)</td>
+<td style="text-align: left;">nothing; raw change</td>
+<td style="text-align: left;">depends on age and sex</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?Z"> (SDS)</td>
+<td style="text-align: left;">makes <strong>size</strong> comparable across ages</td>
+<td style="text-align: left;">says nothing about change</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?W"> (SDS/year)</td>
+<td style="text-align: left;">change in Z-units</td>
+<td style="text-align: left;">spread depends on the gap and the age</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"></td>
+<td style="text-align: left;">spread standardised, <img src="https://latex.codecogs.com/png.latex?N(0,1)"> for any pair of ages</td>
+<td style="text-align: left;">ignores regression to the mean</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"></td>
+<td style="text-align: left;">also corrects for regression to the mean, <img src="https://latex.codecogs.com/png.latex?N(0,1)"> for every start</td>
+<td style="text-align: left;">uses only the information supplied (see next section)</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="sec-preview" class="level2">
+<h2 class="anchored" data-anchor-id="sec-preview">12. Preview: beyond two measurements</h2>
+<p>The paper’s main extension is to condition on <strong>all</strong> previous measurements, not only the last one. I will cover the derivation in a follow-up post. The ingredients are:</p>
+<ul>
+<li><strong>Regression weights.</strong> For measurements at ages 1, 2 and 6 months the expected value becomes <img src="https://latex.codecogs.com/png.latex?%5Cbeta_1Z_1+%5Cbeta_2Z_2"> with <img src="https://latex.codecogs.com/png.latex?%0A%5Cbeta_1=%5Cfrac%7Br_%7B16%7D-r_%7B26%7Dr_%7B12%7D%7D%7B1-r_%7B12%7D%5E2%7D,%5Cquad%0A%5Cbeta_2=%5Cfrac%7Br_%7B26%7D-r_%7B16%7Dr_%7B12%7D%7D%7B1-r_%7B12%7D%5E2%7D,%5Cquad%0Ar%5E2=%5Cfrac%7Br_%7B16%7D%5E2+r_%7B26%7D%5E2-2r_%7B12%7Dr_%7B16%7Dr_%7B26%7D%7D%7B1-r_%7B12%7D%5E2%7D,%0A"> and <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D_6=%5Cdfrac%7BZ_6-(%5Cbeta_1Z_1+%5Cbeta_2Z_2)%7D%7B%5Csqrt%7B1-r%5E2%7D%7D">. For more points the paper uses the <strong>sweep operator</strong>, which gives <img src="https://latex.codecogs.com/png.latex?%5Cbeta"> and the residual variance from the correlation matrix.</li>
+<li><strong>Arbitrary ages.</strong> Table 2 only covers ten scheduled ages, so the paper models the Fisher-transformed correlation as a function of the two ages (the Cole correlation model; adjusted <img src="https://latex.codecogs.com/png.latex?R%5E2"> of 0.997 for weight and 0.971 for height).</li>
+<li><strong>The adaptive growth chart.</strong> The child’s curve is shown with a reference band and two new elements: an <em>amplitude</em> (the series of conditional gains) and a <em>flag</em> (a prediction band for the next measurement).</li>
+</ul>
+<p>The paper’s own example, using the height correlations from Table 2 (<img src="https://latex.codecogs.com/png.latex?r_%7B16%7D=0.691">, <img src="https://latex.codecogs.com/png.latex?r_%7B26%7D=0.745">, <img src="https://latex.codecogs.com/png.latex?r_%7B12%7D=0.856">, giving <img src="https://latex.codecogs.com/png.latex?%5Cbeta_1%5Capprox0.198">, <img src="https://latex.codecogs.com/png.latex?%5Cbeta_2%5Capprox0.575">, <img src="https://latex.codecogs.com/png.latex?r%5E2%5Capprox0.566">), shows how an extra measurement changes the story:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Measurements used</th>
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> at 6 months</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Month 2 only (the Figure 1 child above)</td>
+<td style="text-align: right;">−1.57 (not flagged)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Months 1 and 2, <img src="https://latex.codecogs.com/png.latex?Y_1=56"> cm (<img src="https://latex.codecogs.com/png.latex?Z_1=+1.065">)</td>
+<td style="text-align: right;">−1.76 (flagged)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Months 1 and 2, <img src="https://latex.codecogs.com/png.latex?Y_1=53"> cm (<img src="https://latex.codecogs.com/png.latex?Z_1=-0.432">)</td>
+<td style="text-align: right;">−1.31 (not flagged)</td>
+</tr>
+</tbody>
+</table>
+<p>I reproduced all three values from the Z-scores, which also confirms my reading of <img src="https://latex.codecogs.com/png.latex?Z_2"> and <img src="https://latex.codecogs.com/png.latex?Z_6"> off Figure 1.</p>
+<p>In the paper’s validation on the SMOCC data (Table 4), the SD of <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> is close to 1 (about 1.0 for weight and 1.05 for height), and 4.0 to 4.5% of children fall below the 5th-centile thrive line, close to the nominal 5%. Using all historic measurements barely changed the explained variance compared with using only the last measurement (79.3% versus 79.6% for weight, 73.1% versus 72.6% for height), and the paper therefore suggests including at least the last two measurements.</p>
+</section>
+</section>
+<section id="part-2" class="level1">
+<h1>Part II: Questions and answers</h1>
+<section id="q1" class="level2">
+<h2 class="anchored" data-anchor-id="q1">Q1. What does “1 SD above average” mean once everything has mean 0 and SD 1?</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Short answer
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Mean 0 and SD 1 describe the reference population, not a child. A child’s Z is the number of reference SDs they are from the mean, and it corresponds to the same percentile at every age.</p>
+</div>
+</div>
+<p><strong>Proof that Z is comparable across ages.</strong> Suppose that at age <img src="https://latex.codecogs.com/png.latex?a"> the reference is normal, <img src="https://latex.codecogs.com/png.latex?Y%5Csim%20N(%5Cmu_a,%5Csigma_a%5E2)">. Then</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AP(Z%5Cle%20z)=P%5C!%5Cleft(%5Cfrac%7BY-%5Cmu_a%7D%7B%5Csigma_a%7D%5Cle%20z%5Cright)=P(Y%5Cle%5Cmu_a+%5Csigma_a%20z)=%5CPhi(z)%0A"></p>
+<p>for <strong>every</strong> <img src="https://latex.codecogs.com/png.latex?a">. So <img src="https://latex.codecogs.com/png.latex?Z=+1"> means the 84.1st centile whether the child is a newborn or a 2-year-old, and the 5% thrive line is <img src="https://latex.codecogs.com/png.latex?Z=-1.645"> at every age. The SD is not lost, it is absorbed into the unit: one reference SD is 2.0 cm at birth and 3.2 cm at 24 months in the illustrative table, but it is exactly 1 on the Z-scale.</p>
+<p><strong>Example.</strong> A 3 cm excess is <img src="https://latex.codecogs.com/png.latex?Z=+1.50"> at birth and <img src="https://latex.codecogs.com/png.latex?Z=+0.94"> at 24 months. The same raw excess is a larger deviation where the SD is smaller. Without converting, you cannot compare the two children.</p>
+</section>
+<section id="q2" class="level2">
+<h2 class="anchored" data-anchor-id="q2">Q2. Are velocity <img src="https://latex.codecogs.com/png.latex?V"> and SDS-velocity <img src="https://latex.codecogs.com/png.latex?W"> the same problem?</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Short answer
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>No.&nbsp;They are two different problems, and fixing the first leaves the second in place.</p>
+</div>
+</div>
+<ul>
+<li><strong><img src="https://latex.codecogs.com/png.latex?V"> has a scale problem.</strong> Centimetres are not comparable across ages. A typical <img src="https://latex.codecogs.com/png.latex?V"> is about 25 cm/year in infancy and about 6 cm/year at age 8, so “10 cm/year” is fast at one age and slow at another. Standardising the sizes (<img src="https://latex.codecogs.com/png.latex?Y%5Cto%20Z">) fixes this and gives <img src="https://latex.codecogs.com/png.latex?W">.</li>
+<li><strong><img src="https://latex.codecogs.com/png.latex?W"> has a variance problem.</strong> After standardising, the <strong>change</strong> in <img src="https://latex.codecogs.com/png.latex?Z"> is still not equally variable everywhere:</li>
+</ul>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Coperatorname%7BSD%7D(W)=%5Cfrac%7B%5Csqrt%7B2-2r%7D%7D%7BT_2-T_1%7D%0A"></p>
+<p>The time dependence enters in two ways, both through <img src="https://latex.codecogs.com/png.latex?r">: the <strong>length of the gap</strong> (a short gap gives a high <img src="https://latex.codecogs.com/png.latex?r"> and a small spread) and the <strong>age</strong> (for the same gap, infants are less stable than older children, so <img src="https://latex.codecogs.com/png.latex?r"> is lower and the spread larger). The table in Step 2 shows the same slope of <img src="https://latex.codecogs.com/png.latex?-1"> SDS/year as noise (month 1 to 2), normal (month 0 to 12) and unusual (month 12 to 24).</p>
+<p><strong>Analogy.</strong> A 2-second improvement in a swimming race is small for a beginner whose times wobble by ±3 seconds, and large for an elite swimmer whose times wobble by ±0.3 seconds. Fixing the units of time does not fix the difference in wobble.</p>
+</section>
+<section id="q3" class="level2">
+<h2 class="anchored" data-anchor-id="q3">Q3. How does <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> remove the dependence on the gap and the age, and what does “a single threshold works everywhere” mean?</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Short answer
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> divides the change by its own SD, <img src="https://latex.codecogs.com/png.latex?%5Csqrt%7B2-2r%7D">, with <img src="https://latex.codecogs.com/png.latex?r"> looked up for that exact pair of ages. The dependence on gap and age lives only in <img src="https://latex.codecogs.com/png.latex?r">, so dividing by <img src="https://latex.codecogs.com/png.latex?%5Csqrt%7B2-2r%7D"> removes it. The same cut-off then flags the same share of children at every interval.</p>
+</div>
+</div>
+<p><strong>Derivation.</strong> Under (A), <img src="https://latex.codecogs.com/png.latex?Z_2-Z_1"> is a linear combination of normal variables, so it is normal. Its mean is <img src="https://latex.codecogs.com/png.latex?0"> and its variance is</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Coperatorname%7BVar%7D(Z_2-Z_1)=%5Coperatorname%7BVar%7D(Z_2)+%5Coperatorname%7BVar%7D(Z_1)-2%5Coperatorname%7BCov%7D(Z_1,Z_2)=1+1-2r%0A"></p>
+<p>Dividing a <img src="https://latex.codecogs.com/png.latex?N(0,2-2r)"> variable by <img src="https://latex.codecogs.com/png.latex?%5Csqrt%7B2-2r%7D"> gives <img src="https://latex.codecogs.com/png.latex?N(0,1)">, whatever <img src="https://latex.codecogs.com/png.latex?r"> is.</p>
+<p><strong>What “a single threshold” means.</strong> Define “right” as flagging the intended share (5%) of healthy children at any pair of ages. For healthy children <img src="https://latex.codecogs.com/png.latex?Z_2-Z_1%5Csim%20N(0,%5Csigma_u%5E2)">, so the fixed rule “flag a drop of at least 1 SDS” flags <img src="https://latex.codecogs.com/png.latex?%5CPhi(-1/%5Csigma_u)"> of them. The table in Step 3 gives 13.8%, 5.6%, 3.1%, 17.2% and 4.9% for five intervals: far too many false alarms in some intervals and too few in others. With <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D%3C-1.645"> the share is <img src="https://latex.codecogs.com/png.latex?%5CPhi(-1.645)=5%5C%25"> for every interval.</p>
+<p>Equivalently, <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D%3C-1.645"> means <img src="https://latex.codecogs.com/png.latex?Z_2-Z_1%3C-1.645%5C,%5Csigma_u">, so the drop in <img src="https://latex.codecogs.com/png.latex?Z"> needed to flag changes with the interval (1.51 for month 0 to 3, 1.03 for month 3 to 6). Dividing by <img src="https://latex.codecogs.com/png.latex?%5Csigma_u"> is the age-specific adjustment.</p>
+<p><strong>Example.</strong> Two children both drop exactly 1.0 SDS. Child P is measured at 0 and 3 months, so <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D=-1/0.917=-1.09">, which is unremarkable. Child Q is measured at 3 and 6 months, so <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D=-1/0.628=-1.59">, which is just above the thrive line. The raw drops are identical, but Q’s drop is much more unusual because children of that age normally change less.</p>
+</section>
+<section id="q4" class="level2">
+<h2 class="anchored" data-anchor-id="q4">Q4. Why the 5th-centile “thrive line”?</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Short answer
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>It is a pre-chosen tripwire, not a mathematical property. <img src="https://latex.codecogs.com/png.latex?-1.645"> is the Z-value with 5% of the normal distribution below it, so the rule flags 1 in 20 children from the reference population at each evaluation.</p>
+</div>
+</div>
+<p>The analogy is airport security. They cannot open every bag, so they decide in advance to pull aside a fixed share for a manual check. A bag being pulled aside does not mean it is dangerous, only that it is unusual enough to look at.</p>
+<p>In the paper the thrive line is the 5th centile of the <strong>conditional</strong> gain <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> (the idea is from Wright et al., 1994), so it says “only 5% of reference children grow this badly or worse over that interval”. It is one-sided because the clinical worry is growth faltering.</p>
+<p>The choice of 5% is a trade-off between sensitivity and false alarms, and the table of cut-offs in Section 9 shows the alternatives (2.5%: <img src="https://latex.codecogs.com/png.latex?-1.96">; 1%: <img src="https://latex.codecogs.com/png.latex?-2.326">). The right level depends on what happens after a flag: a cheap follow-up (a re-weigh) justifies a looser line. The accumulation over repeated visits (37.0% flagged at least once over the paper’s 9 evaluations at 5%, see Section 9) is a further reason the cut-off need not be 5%.</p>
+</section>
+<section id="q5" class="level2">
+<h2 class="anchored" data-anchor-id="q5">Q5. What is <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon">, and why is <img src="https://latex.codecogs.com/png.latex?%5Coperatorname%7BCov%7D(%5Cvarepsilon,%20Z_1)=0">?</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Short answer
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon"> is the part of <img src="https://latex.codecogs.com/png.latex?Z_2"> that <img src="https://latex.codecogs.com/png.latex?Z_1"> cannot predict. It has zero covariance with <img src="https://latex.codecogs.com/png.latex?Z_1"> because <img src="https://latex.codecogs.com/png.latex?r"> is exactly the multiplier that removes everything in <img src="https://latex.codecogs.com/png.latex?Z_2"> that is linearly related to <img src="https://latex.codecogs.com/png.latex?Z_1">.</p>
+</div>
+</div>
+<p>Define the surprise</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Cvarepsilon%20=%20Z_2%20-%20r%5C,Z_1%5Cqquad%5CLongleftrightarrow%5Cqquad%20Z_2=%5Cunderbrace%7BrZ_1%7D_%7B%5Ctext%7Bpredictable%7D%7D+%5Cunderbrace%7B%5Cvarepsilon%7D_%7B%5Ctext%7Bunpredictable%7D%7D%0A"></p>
+<p><strong>Proof that <img src="https://latex.codecogs.com/png.latex?%5Coperatorname%7BCov%7D(%5Cvarepsilon,Z_1)=0">.</strong> Use two rules of covariance: it splits over subtraction, and a constant can be pulled out.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Cbegin%7Baligned%7D%0A%5Coperatorname%7BCov%7D(%5Cvarepsilon,Z_1)%0A&amp;=%5Coperatorname%7BCov%7D(Z_2-rZ_1,%5C,Z_1)%5C%5C%0A&amp;=%5Coperatorname%7BCov%7D(Z_2,Z_1)-r%5Coperatorname%7BCov%7D(Z_1,Z_1)%5C%5C%0A&amp;=r-r%5Ccdot%201=0%0A%5Cend%7Baligned%7D%0A"></p>
+<p>Here <img src="https://latex.codecogs.com/png.latex?%5Coperatorname%7BCov%7D(Z_1,Z_1)=%5Coperatorname%7BVar%7D(Z_1)=1">, and <img src="https://latex.codecogs.com/png.latex?%5Coperatorname%7BCov%7D(Z_2,Z_1)=r"> because the correlation is the covariance divided by two SDs that both equal 1.</p>
+<p><strong>Why the multiplier is exactly <img src="https://latex.codecogs.com/png.latex?r">.</strong> Subtract an unknown multiple <img src="https://latex.codecogs.com/png.latex?c"> instead:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Coperatorname%7BCov%7D(Z_2-cZ_1,%5C,Z_1)=r-c%0A"></p>
+<p>This is zero only when <img src="https://latex.codecogs.com/png.latex?c=r">, which is also the least-squares slope of <img src="https://latex.codecogs.com/png.latex?Z_2"> on <img src="https://latex.codecogs.com/png.latex?Z_1">. Any other multiplier would leave some of <img src="https://latex.codecogs.com/png.latex?Z_1"> in the remainder.</p>
+<p><strong>Variance of <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon">.</strong></p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Coperatorname%7BVar%7D(%5Cvarepsilon)=%5Coperatorname%7BVar%7D(Z_2)-2r%5Coperatorname%7BCov%7D(Z_1,Z_2)+r%5E2%5Coperatorname%7BVar%7D(Z_1)=1-2r%5E2+r%5E2=1-r%5E2%0A"></p>
+<p><strong>Numerical check</strong> with <img src="https://latex.codecogs.com/png.latex?r=0.5"> and four children whose <img src="https://latex.codecogs.com/png.latex?Z_1"> and <img src="https://latex.codecogs.com/png.latex?Z_2"> have mean exactly 0 and variance 1:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Child</th>
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?Z_1"></th>
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?Z_2"></th>
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon=Z_2-0.5Z_1"></th>
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon%5Ctimes%20Z_1"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">1</td>
+<td style="text-align: right;">−1</td>
+<td style="text-align: right;">−1.366</td>
+<td style="text-align: right;">−0.866</td>
+<td style="text-align: right;">+0.866</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">2</td>
+<td style="text-align: right;">−1</td>
+<td style="text-align: right;">+0.366</td>
+<td style="text-align: right;">+0.866</td>
+<td style="text-align: right;">−0.866</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">3</td>
+<td style="text-align: right;">+1</td>
+<td style="text-align: right;">+1.366</td>
+<td style="text-align: right;">+0.866</td>
+<td style="text-align: right;">+0.866</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">4</td>
+<td style="text-align: right;">+1</td>
+<td style="text-align: right;">−0.366</td>
+<td style="text-align: right;">−0.866</td>
+<td style="text-align: right;">−0.866</td>
+</tr>
+</tbody>
+</table>
+<p>The mean of <img src="https://latex.codecogs.com/png.latex?Z_1Z_2"> is <img src="https://latex.codecogs.com/png.latex?0.5"> (so <img src="https://latex.codecogs.com/png.latex?r=0.5">), the mean of <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon%20Z_1"> is <img src="https://latex.codecogs.com/png.latex?0">, and <img src="https://latex.codecogs.com/png.latex?%5Coperatorname%7BVar%7D(%5Cvarepsilon)=0.75=1-0.5%5E2">.</p>
+<p>A caution: zero covariance means “uncorrelated”. To upgrade it to <strong>independent</strong> we need joint normality, which is used in the next question.</p>
+</section>
+<section id="q6" class="level2">
+<h2 class="anchored" data-anchor-id="q6">Q6. Prove that <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> is <img src="https://latex.codecogs.com/png.latex?N(0,1)"> for every starting value <img src="https://latex.codecogs.com/png.latex?Z_1">. Is it true that “independent of <img src="https://latex.codecogs.com/png.latex?Z_1">, hence normal for every start”?</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Short answer
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Yes, the statement is true, but both ingredients are needed: <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> is itself <img src="https://latex.codecogs.com/png.latex?N(0,1)">, and it is independent of <img src="https://latex.codecogs.com/png.latex?Z_1">, so conditioning on <img src="https://latex.codecogs.com/png.latex?Z_1"> changes nothing.</p>
+</div>
+</div>
+<p><strong>Claim.</strong> Under (A), for every fixed <img src="https://latex.codecogs.com/png.latex?z">,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AZ%5E%7Bg%7D%5Cmid%20Z_1=z%5C;%5Csim%5C;N(0,1)%0A"></p>
+<section id="proof-1-independence" class="level3">
+<h3 class="anchored" data-anchor-id="proof-1-independence">Proof 1: independence</h3>
+<ol type="1">
+<li>Let <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon=Z_2-rZ_1">. The pair <img src="https://latex.codecogs.com/png.latex?(Z_1,%5Cvarepsilon)"> is a linear transformation of <img src="https://latex.codecogs.com/png.latex?(Z_1,Z_2)">, so it is jointly normal with mean 0.</li>
+<li>By Q5, <img src="https://latex.codecogs.com/png.latex?%5Coperatorname%7BCov%7D(Z_1,%5Cvarepsilon)=0"> and <img src="https://latex.codecogs.com/png.latex?%5Coperatorname%7BVar%7D(%5Cvarepsilon)=1-r%5E2">.</li>
+<li><strong>Jointly normal and uncorrelated implies independent.</strong> The covariance matrix of <img src="https://latex.codecogs.com/png.latex?(Z_1,%5Cvarepsilon)"> is diagonal, so the joint density factorises:</li>
+</ol>
+<p><img src="https://latex.codecogs.com/png.latex?%0Af(z_1,e)=%5Cunderbrace%7B%5Ctfrac%7B1%7D%7B%5Csqrt%7B2%5Cpi%7D%7De%5E%7B-z_1%5E2/2%7D%7D_%7Bf_%7BZ_1%7D(z_1)%7D%5Ccdot%5Cunderbrace%7B%5Ctfrac%7B1%7D%7B%5Csqrt%7B2%5Cpi(1-r%5E2)%7D%7De%5E%7B-e%5E2/(2(1-r%5E2))%7D%7D_%7Bf_%5Cvarepsilon(e)%7D%0A"></p>
+<ol start="4" type="1">
+<li><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D=%5Cvarepsilon/%5Csqrt%7B1-r%5E2%7D"> is a scaled copy of <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon">, so <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D%5Csim%20N(0,1)">.</li>
+<li>Because <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> depends only on <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon">, which is independent of <img src="https://latex.codecogs.com/png.latex?Z_1">, conditioning on <img src="https://latex.codecogs.com/png.latex?Z_1=z"> changes nothing:</li>
+</ol>
+<p><img src="https://latex.codecogs.com/png.latex?%0AP(Z%5E%7Bg%7D%5Cle%20t%5Cmid%20Z_1=z)=P(Z%5E%7Bg%7D%5Cle%20t)=%5CPhi(t)%5Cquad%5Ctext%7Bfor%20every%20%7Dz.%5Cqquad%5Cblacksquare%0A"></p>
+</section>
+<section id="proof-2-directly-from-the-densities" class="level3">
+<h3 class="anchored" data-anchor-id="proof-2-directly-from-the-densities">Proof 2: directly from the densities</h3>
+<p>Start with the bivariate normal density and the marginal of <img src="https://latex.codecogs.com/png.latex?Z_1">:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0Af(z_1,z_2)=%5Cfrac%7B1%7D%7B2%5Cpi%5Csqrt%7B1-r%5E2%7D%7D%5Cexp%5C!%5Cleft(-%5Cfrac%7Bz_1%5E2-2rz_1z_2+z_2%5E2%7D%7B2(1-r%5E2)%7D%5Cright),%5Cqquad%0Af(z_1)=%5Cfrac%7B1%7D%7B%5Csqrt%7B2%5Cpi%7D%7De%5E%7B-z_1%5E2/2%7D%0A"></p>
+<p>The conditional density is the ratio. The terms in the exponent combine as</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0Az_1%5E2-2rz_1z_2+z_2%5E2-(1-r%5E2)z_1%5E2=(z_2-rz_1)%5E2%0A"></p>
+<p>so</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0Af(z_2%5Cmid%20z_1)=%5Cfrac%7B1%7D%7B%5Csqrt%7B2%5Cpi(1-r%5E2)%7D%7D%5Cexp%5C!%5Cleft(-%5Cfrac%7B(z_2-rz_1)%5E2%7D%7B2(1-r%5E2)%7D%5Cright),%0A"></p>
+<p>which is the <img src="https://latex.codecogs.com/png.latex?N(rz_1,%5C,1-r%5E2)"> density. Change variables to <img src="https://latex.codecogs.com/png.latex?g=(z_2-rz_1)/%5Csqrt%7B1-r%5E2%7D">, so that <img src="https://latex.codecogs.com/png.latex?dz_2/dg=%5Csqrt%7B1-r%5E2%7D">:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0Af_%7BZ%5E%7Bg%7D%5Cmid%20Z_1%7D(g%5Cmid%20z_1)=f(z_2%5Cmid%20z_1)%5Csqrt%7B1-r%5E2%7D=%5Cfrac%7B1%7D%7B%5Csqrt%7B2%5Cpi%7D%7De%5E%7B-g%5E2/2%7D.%0A"></p>
+<p>This does not contain <img src="https://latex.codecogs.com/png.latex?z_1">, and it is the standard normal density. <img src="https://latex.codecogs.com/png.latex?%5Cblacksquare"></p>
+</section>
+<section id="why-both-ingredients-are-needed" class="level3">
+<h3 class="anchored" data-anchor-id="why-both-ingredients-are-needed">Why both ingredients are needed</h3>
+<p>Independence alone would not give normality, and normality alone would not give “for every <img src="https://latex.codecogs.com/png.latex?Z_1">”. If, say, <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> were <img src="https://latex.codecogs.com/png.latex?N(0,1)"> overall but its spread grew with <img src="https://latex.codecogs.com/png.latex?Z_1">, it would be normal in total and not conditional on <img src="https://latex.codecogs.com/png.latex?Z_1">. Joint normality is what makes zero covariance enough for independence.</p>
+<p><strong>Numerical example.</strong> With <img src="https://latex.codecogs.com/png.latex?r=0.7"> and <img src="https://latex.codecogs.com/png.latex?Z_1=-2">, the proof says <img src="https://latex.codecogs.com/png.latex?Z_2%5Cmid%20Z_1=-2%5Csim%20N(-1.4,%5C,0.51)">, so <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D=(Z_2+1.4)/0.714"> is <img src="https://latex.codecogs.com/png.latex?N(0,1)">. For <img src="https://latex.codecogs.com/png.latex?Z_1=+2">, <img src="https://latex.codecogs.com/png.latex?Z_2%5Cmid%20Z_1=2%5Csim%20N(1.4,%5C,0.51)"> and <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D=(Z_2-1.4)/0.714"> is again <img src="https://latex.codecogs.com/png.latex?N(0,1)">.</p>
+<p><strong>Where it can fail.</strong> The result is exact only under (A). If <img src="https://latex.codecogs.com/png.latex?(Z_1,Z_2)"> are not jointly normal, the true <img src="https://latex.codecogs.com/png.latex?E%5BZ_2%5Cmid%20Z_1%5D"> need not be the straight line <img src="https://latex.codecogs.com/png.latex?rZ_1"> and the spread may vary with <img src="https://latex.codecogs.com/png.latex?Z_1">. The paper checks this empirically (Table 4), and its discussion warns that deviations from bivariate normality can hide subtle effects.</p>
+</section>
+</section>
+<section id="q7" class="level2">
+<h2 class="anchored" data-anchor-id="q7">Q7. <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> is <img src="https://latex.codecogs.com/png.latex?N(0,1)"> across all children, but not within a starting group. What does that mean?</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Short answer
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> <strong>is</strong> normal within each starting group, but with the wrong centre and a spread below 1. Only the whole mixture of groups is standard normal.</p>
+</div>
+</div>
+<p><strong>Analogy.</strong> A bathroom scale reads 2 kg too heavy for light people and 2 kg too light for heavy people. The average error over everyone is 0, so the scale looks fine overall, but it is wrong for every individual.</p>
+<p><strong>Derivation.</strong> Write <img src="https://latex.codecogs.com/png.latex?Z_2=rZ_1+%5Cvarepsilon"> with <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon"> independent of <img src="https://latex.codecogs.com/png.latex?Z_1"> and <img src="https://latex.codecogs.com/png.latex?%5Coperatorname%7BVar%7D(%5Cvarepsilon)=1-r%5E2"> (Q5, Q6). Then <img src="https://latex.codecogs.com/png.latex?Z_2-Z_1=(r-1)Z_1+%5Cvarepsilon">, and conditional on <img src="https://latex.codecogs.com/png.latex?Z_1=z">:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AE%5BZ%5E%7Bu%7D%5Cmid%20Z_1=z%5D=%5Cfrac%7B(r-1)z%7D%7B%5Csqrt%7B2-2r%7D%7D=-%5Csqrt%7B%5Ctfrac%7B1-r%7D%7B2%7D%7D%5C;z,%5Cqquad%0A%5Coperatorname%7BVar%7D%5BZ%5E%7Bu%7D%5Cmid%20Z_1=z%5D=%5Cfrac%7B1-r%5E2%7D%7B2-2r%7D=%5Cfrac%7B1+r%7D%7B2%7D%0A"></p>
+<p>So <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D%5Cmid%20Z_1=z%5Csim%20N%5C!%5Cleft(-%5Csqrt%7B%5Ctfrac%7B1-r%7D%7B2%7D%7D%5C,z,%5C%20%5Ctfrac%7B1+r%7D%7B2%7D%5Cright)">. This is a bell curve, but with a mean that depends on <img src="https://latex.codecogs.com/png.latex?z"> and a variance below 1. For <img src="https://latex.codecogs.com/png.latex?r=0.7">:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">Starting <img src="https://latex.codecogs.com/png.latex?Z_1"></th>
+<th style="text-align: right;">Mean of <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> in the group</th>
+<th style="text-align: right;">SD of <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> in the group</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">−2</td>
+<td style="text-align: right;">+0.77</td>
+<td style="text-align: right;">0.92</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">−1</td>
+<td style="text-align: right;">+0.39</td>
+<td style="text-align: right;">0.92</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.92</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">+1</td>
+<td style="text-align: right;">−0.39</td>
+<td style="text-align: right;">0.92</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">+2</td>
+<td style="text-align: right;">−0.77</td>
+<td style="text-align: right;">0.92</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why the pooled result is still <img src="https://latex.codecogs.com/png.latex?N(0,1)">.</strong> By the law of total variance,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Coperatorname%7BVar%7D(Z%5E%7Bu%7D)=E%5B%5Coperatorname%7BVar%7D(Z%5E%7Bu%7D%5Cmid%20Z_1)%5D+%5Coperatorname%7BVar%7D(E%5BZ%5E%7Bu%7D%5Cmid%20Z_1%5D)=%5Cfrac%7B1+r%7D%7B2%7D+%5Cfrac%7B1-r%7D%7B2%7D%5Coperatorname%7BVar%7D(Z_1)=1%0A"></p>
+<p>A neater way to see the structure is the identity</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AZ%5E%7Bu%7D=-%5Csqrt%7B%5Ctfrac%7B1-r%7D%7B2%7D%7D%5C;Z_1+%5Csqrt%7B%5Ctfrac%7B1+r%7D%7B2%7D%7D%5C;Z%5E%7Bg%7D,%0A"></p>
+<p>where <img src="https://latex.codecogs.com/png.latex?Z_1"> and <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> are independent and the squared weights add to 1. So <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> is a blend of the <strong>starting value</strong> and the genuinely new part <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D">. This also gives</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Coperatorname%7BCorr%7D(Z%5E%7Bu%7D,Z_1)=-%5Csqrt%7B%5Ctfrac%7B1-r%7D%7B2%7D%7D%5Capprox-0.39%5C%20(r=0.7),%5Cqquad%20%5Coperatorname%7BCorr%7D(Z%5E%7Bg%7D,Z_1)=0%0A"></p>
+<p><strong>Why this matters.</strong> A single cut-off or percentile reading assumes <img src="https://latex.codecogs.com/png.latex?N(0,1)"> for the child in front of you, and that is the <em>conditional</em> statement. Also, a low <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> is partly just “started high”, which can contaminate any later analysis that correlates <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> with something else.</p>
+</section>
+<section id="q8" class="level2">
+<h2 class="anchored" data-anchor-id="q8">Q8. Where do 0.4%, 3.7% and 17.3% come from?</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Short answer
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>They are the shares of healthy children, starting at <img src="https://latex.codecogs.com/png.latex?Z_1=-2">, <img src="https://latex.codecogs.com/png.latex?0"> and <img src="https://latex.codecogs.com/png.latex?+2">, whose <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> falls below <img src="https://latex.codecogs.com/png.latex?-1.645"> just through normal variation.</p>
+</div>
+</div>
+<p><strong>Analogy.</strong> Imagine a basketball hoop (the flag line) set a fixed distance below where a child started. Children do not land at their starting point. They land near <img src="https://latex.codecogs.com/png.latex?rZ_1">, pulled toward average. For a child who started low, the landing zone is <em>above</em> the start, so the hoop sits far below the landing zone and almost nobody falls under it. For a child who started high, the landing zone is <em>below</em> the start, so the hoop sits close to the landing zone and many fall under it.</p>
+<p><strong>Step 1: where do healthy children starting at <img src="https://latex.codecogs.com/png.latex?Z_1"> end up?</strong> From Q6, <img src="https://latex.codecogs.com/png.latex?Z_2%5Cmid%20Z_1%5Csim%20N(rZ_1,%5C,1-r%5E2)">, which for <img src="https://latex.codecogs.com/png.latex?r=0.7"> is <img src="https://latex.codecogs.com/png.latex?N(0.7Z_1,%5C%200.714%5E2)">.</p>
+<p><strong>Step 2: where is the <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> flag line on the <img src="https://latex.codecogs.com/png.latex?Z_2"> axis?</strong></p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AZ%5E%7Bu%7D%3C-1.645%5Ciff%20Z_2%3CZ_1-1.645%5Csqrt%7B2-2r%7D=Z_1-1.274%0A"></p>
+<p>The line sits a fixed 1.274 below the start.</p>
+<p><strong>Step 3: how far is the line from the centre of the landing zone?</strong> In SD units this is <img src="https://latex.codecogs.com/png.latex?%5Cdfrac%7B(Z_1-1.274)-0.7Z_1%7D%7B0.714%7D">, and the flag share is the normal tail area <img src="https://latex.codecogs.com/png.latex?%5CPhi(%5Ctext%7Bdistance%7D)">:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">Start <img src="https://latex.codecogs.com/png.latex?Z_1"></th>
+<th style="text-align: right;">Landing centre (<img src="https://latex.codecogs.com/png.latex?0.7Z_1">)</th>
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> line (<img src="https://latex.codecogs.com/png.latex?Z_1-1.274">)</th>
+<th style="text-align: right;">Distance in SD units</th>
+<th style="text-align: right;">Share below the line</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">−2</td>
+<td style="text-align: right;">−1.40</td>
+<td style="text-align: right;">−3.27</td>
+<td style="text-align: right;">−2.62</td>
+<td style="text-align: right;">0.4%</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">−1</td>
+<td style="text-align: right;">−0.70</td>
+<td style="text-align: right;">−2.27</td>
+<td style="text-align: right;">−2.20</td>
+<td style="text-align: right;">1.4%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">−1.27</td>
+<td style="text-align: right;">−1.78</td>
+<td style="text-align: right;">3.7%</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">+1</td>
+<td style="text-align: right;">+0.70</td>
+<td style="text-align: right;">−0.27</td>
+<td style="text-align: right;">−1.36</td>
+<td style="text-align: right;">8.6%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">+2</td>
+<td style="text-align: right;">+1.40</td>
+<td style="text-align: right;">+0.73</td>
+<td style="text-align: right;">−0.94</td>
+<td style="text-align: right;">17.3%</td>
+</tr>
+</tbody>
+</table>
+<p>The two rules are drawn in Figure&nbsp;1. In general, <img src="https://latex.codecogs.com/png.latex?P(Z%5E%7Bu%7D%3Cc%5Cmid%20Z_1=z)=%5CPhi%5C!%5Cleft(%5Cdfrac%7Bc+%5Csqrt%7B(1-r)/2%7D%5C,z%7D%7B%5Csqrt%7B(1+r)/2%7D%7D%5Cright)">.</p>
+<div id="fig-landing" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Three panels showing a bell curve of second Z-scores for children starting at Z1 equal to minus 2, 0 and plus 2, with a vertical flag line for each of the two rules. The Zu line is far below the curve for the low starter and cuts through the main body of the curve for the high starter, while the Zg line is always in the lower tail.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-landing-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://your-website-url.example.com/posts/conditional_sds_gain/figures/fig-landing-zones.png" class="img-fluid figure-img" alt="Three panels showing a bell curve of second Z-scores for children starting at Z1 equal to minus 2, 0 and plus 2, with a vertical flag line for each of the two rules. The Zu line is far below the curve for the low starter and cuts through the main body of the curve for the high starter, while the Zg line is always in the lower tail.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-landing-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Where healthy children starting at <img src="https://latex.codecogs.com/png.latex?Z_1"> end up (curve), and where each rule draws its flag line. The <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> line stays a fixed distance below the start; the <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> line follows the centre of the curve.
+</figcaption>
+</figure>
+</div>
+<p><strong>The same calculation for <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D">.</strong> It flags when <img src="https://latex.codecogs.com/png.latex?Z_2%3CrZ_1-1.645%5Csqrt%7B1-r%5E2%7D=0.7Z_1-1.175">. This line moves with the centre of the landing zone and is always exactly 1.645 SDs below it, so the tail area is 5% for every start.</p>
+<div id="fig-flagrate" class="quarto-float quarto-figure quarto-figure-center anchored" alt="A line chart of the percentage of healthy children flagged against starting Z-score. The Zu rule rises from about 0.4 percent at a starting value of minus 2 to 3.7 percent at 0 and 17.3 percent at plus 2, crossing the flat 5 percent line of the Zg rule near a starting value of 0.3.">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-flagrate-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://your-website-url.example.com/posts/conditional_sds_gain/figures/fig-flag-rate.png" class="img-fluid figure-img" alt="A line chart of the percentage of healthy children flagged against starting Z-score. The Zu rule rises from about 0.4 percent at a starting value of minus 2 to 3.7 percent at 0 and 17.3 percent at plus 2, crossing the flat 5 percent line of the Zg rule near a starting value of 0.3.">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-flagrate-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Share of healthy children flagged at the 5% cut-off, by starting value (<img src="https://latex.codecogs.com/png.latex?r=0.7">).
+</figcaption>
+</figure>
+</div>
+<p><strong>What the percentages mean in practice.</strong> Take 1,000 healthy children, all starting at <img src="https://latex.codecogs.com/png.latex?Z_1=-2">. About 4 of them are flagged by <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D">. If one of them had a real problem, <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> would have to be extremely low to fire, so real problems are easily missed in that group. Among 1,000 starting at <img src="https://latex.codecogs.com/png.latex?Z_1=+2">, about 173 are flagged, which are false alarms. Averaged over the whole distribution of <img src="https://latex.codecogs.com/png.latex?Z_1">, both rules flag <img src="https://latex.codecogs.com/png.latex?%5CPhi(-1.645)=5%5C%25">.</p>
+</section>
+<section id="q9" class="level2">
+<h2 class="anchored" data-anchor-id="q9">Q9. If the same <img src="https://latex.codecogs.com/png.latex?Z_2"> gives a different <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> for different <img src="https://latex.codecogs.com/png.latex?Z_1">, so <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> does use <img src="https://latex.codecogs.com/png.latex?Z_1">, what is wrong with it?</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Short answer
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> does adjust for <img src="https://latex.codecogs.com/png.latex?Z_1">, but by the wrong amount. It subtracts all of <img src="https://latex.codecogs.com/png.latex?Z_1">, while the right expectation is only <img src="https://latex.codecogs.com/png.latex?r%5C,Z_1">.</p>
+</div>
+</div>
+<p>Hold <img src="https://latex.codecogs.com/png.latex?Z_2"> fixed and increase <img src="https://latex.codecogs.com/png.latex?Z_1"> by one unit. The scores change by</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Cfrac%7B%5Cpartial%20Z%5E%7Bu%7D%7D%7B%5Cpartial%20Z_1%7D=-%5Cfrac%7B1%7D%7B%5Csqrt%7B2-2r%7D%7D=-1.29,%5Cqquad%0A%5Cfrac%7B%5Cpartial%20Z%5E%7Bg%7D%7D%7B%5Cpartial%20Z_1%7D=-%5Cfrac%7Br%7D%7B%5Csqrt%7B1-r%5E2%7D%7D=-0.98%5Cqquad(r=0.7)%0A"></p>
+<p>so <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> over-reacts to the starting value. Here is a table with <img src="https://latex.codecogs.com/png.latex?Z_2=-1.0"> fixed and <img src="https://latex.codecogs.com/png.latex?r=0.7">. The last column is the true percentile among children who started at the same <img src="https://latex.codecogs.com/png.latex?Z_1">, which is <img src="https://latex.codecogs.com/png.latex?%5CPhi(Z%5E%7Bg%7D)">:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">Start <img src="https://latex.codecogs.com/png.latex?Z_1"></th>
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"></th>
+<th style="text-align: right;">Percentile <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> implies</th>
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"></th>
+<th style="text-align: right;">True percentile among same-start children</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">−2</td>
+<td style="text-align: right;">+1.29</td>
+<td style="text-align: right;">90.2%</td>
+<td style="text-align: right;">+0.56</td>
+<td style="text-align: right;">71.2%</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">−1</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">50.0%</td>
+<td style="text-align: right;">−0.42</td>
+<td style="text-align: right;">33.7%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">−1.29</td>
+<td style="text-align: right;">9.8%</td>
+<td style="text-align: right;">−1.40</td>
+<td style="text-align: right;">8.1%</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">+1</td>
+<td style="text-align: right;">−2.58</td>
+<td style="text-align: right;">0.5%</td>
+<td style="text-align: right;">−2.38</td>
+<td style="text-align: right;">0.9%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">+2</td>
+<td style="text-align: right;">−3.87</td>
+<td style="text-align: right;">0.005%</td>
+<td style="text-align: right;">−3.36</td>
+<td style="text-align: right;">0.04%</td>
+</tr>
+</tbody>
+</table>
+<p>The row <img src="https://latex.codecogs.com/png.latex?Z_1=-1"> is the clearest. A child who started at <img src="https://latex.codecogs.com/png.latex?-1"> and ended at <img src="https://latex.codecogs.com/png.latex?-1"> has <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D=0">, “exactly as expected”. But children who start at <img src="https://latex.codecogs.com/png.latex?-1"> are expected to rise to <img src="https://latex.codecogs.com/png.latex?-0.7">, so she actually did worse than about two-thirds of her peers.</p>
+<p>Two flag-level examples (with <img src="https://latex.codecogs.com/png.latex?r=0.7">):</p>
+<ul>
+<li><img src="https://latex.codecogs.com/png.latex?Z_1=-1">, <img src="https://latex.codecogs.com/png.latex?Z_2=-2.2">: <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D=-1.55"> is <strong>not flagged</strong> (it is above <img src="https://latex.codecogs.com/png.latex?-1.645">), but <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D=-2.10"> <strong>is flagged</strong> (about 1.8% of such children do this poorly). <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> gives false reassurance.</li>
+<li><img src="https://latex.codecogs.com/png.latex?Z_1=+2">, <img src="https://latex.codecogs.com/png.latex?Z_2=+0.5">: <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D=-1.94"> is <strong>flagged</strong>, but <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D=-1.26"> is not (about 10% of such children drift this far). <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D"> raises a false alarm.</li>
+</ul>
+<p>The size of the error is the <img src="https://latex.codecogs.com/png.latex?(1-r)Z_1"> term in the numerator of <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> (Section 8). It grows with the distance from average, which is where the clinical decisions are made.</p>
+</section>
+<section id="q10" class="level2">
+<h2 class="anchored" data-anchor-id="q10">Q10. How is <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> used on a new child (the “test set”), and when is it valid?</h2>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Short answer
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The reference gives the expected value and the typical error, built once from a reference cohort. For a new child you compute the surprise relative to that expectation and divide by the typical error.</p>
+</div>
+</div>
+<p><strong>Analogy.</strong> A school sets a grading curve from last year’s whole cohort. From it the school learns how strongly first-term marks predict second-term marks (<img src="https://latex.codecogs.com/png.latex?r">). This year, for each new student, it predicts the second-term mark from the first-term mark using that known <img src="https://latex.codecogs.com/png.latex?r">, then measures how far the real mark is from the prediction in units of the usual prediction error.</p>
+<p>The two phases are described in Section 10. Using the Figure 1 child:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Item</th>
+<th style="text-align: left;">Where it comes from</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?r"> (months 2 to 6)</td>
+<td style="text-align: left;">reference cohort (Table 2)</td>
+<td style="text-align: right;">0.745</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?Z_2"></td>
+<td style="text-align: left;">child, via the distance reference</td>
+<td style="text-align: right;">≈ +0.57</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Expected <img src="https://latex.codecogs.com/png.latex?Z_6"></td>
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?r%5Ctimes%20Z_2"></td>
+<td style="text-align: right;">0.425</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Observed <img src="https://latex.codecogs.com/png.latex?Z_6"></td>
+<td style="text-align: left;">child, via the distance reference</td>
+<td style="text-align: right;">≈ −0.62</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Surprise</td>
+<td style="text-align: left;">observed − expected</td>
+<td style="text-align: right;">−1.045</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Typical error</td>
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?%5Csqrt%7B1-r%5E2%7D"></td>
+<td style="text-align: right;">0.667</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"></td>
+<td style="text-align: left;">surprise / typical error</td>
+<td style="text-align: right;">−1.57</td>
+</tr>
+</tbody>
+</table>
+<p>In the paper’s Figure 1 the expected value is the red line, and the dotted red lines are the expected value ±1 and ±2 prediction SDs (<img src="https://latex.codecogs.com/png.latex?0.425%5Cpm2(0.667)">, so about <img src="https://latex.codecogs.com/png.latex?-0.91"> to <img src="https://latex.codecogs.com/png.latex?+1.76"> for <img src="https://latex.codecogs.com/png.latex?Z_6">). <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> is simply where the child’s observation sits within that interval.</p>
+<p><strong>Why divide?</strong> The raw difference (−1.045) depends on the scale of <img src="https://latex.codecogs.com/png.latex?Z"> and on the interval. Dividing by <img src="https://latex.codecogs.com/png.latex?%5Csqrt%7B1-r%5E2%7D"> turns it into “how many typical prediction errors”, a standard normal score, which is what allows one cut-off to be used for every child and every pair of ages.</p>
+<p><strong>Validity.</strong> The expected value <img src="https://latex.codecogs.com/png.latex?rZ_1"> is only right if the new child comes from a population like the reference cohort. If the new children are systematically taller or heavier than the reference, the expected values are off and <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> is biased. The paper’s rule of thumb is that the mean Z-score in the target sample should lie between <img src="https://latex.codecogs.com/png.latex?-0.1"> and <img src="https://latex.codecogs.com/png.latex?+0.1"> SD. For SMOCC the overall mean Z-scores were about 0.06 (weight and height), inside that range.</p>
+</section>
+</section>
+<section id="summary" class="level1">
+<h1>Summary</h1>
+<ul>
+<li><img src="https://latex.codecogs.com/png.latex?Z"> makes <strong>size</strong> comparable across ages, and says nothing about change.</li>
+<li><img src="https://latex.codecogs.com/png.latex?V"> and <img src="https://latex.codecogs.com/png.latex?W"> fail for different reasons: <img src="https://latex.codecogs.com/png.latex?V"> because centimetres are not comparable across ages, and <img src="https://latex.codecogs.com/png.latex?W"> because the spread of change depends on the gap and the age through <img src="https://latex.codecogs.com/png.latex?r">.</li>
+<li><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D=(Z_2-Z_1)/%5Csqrt%7B2-2r%7D"> standardises that spread and is <img src="https://latex.codecogs.com/png.latex?N(0,1)"> across all children. But it assumes zero expected change, and it is <em>not</em> <img src="https://latex.codecogs.com/png.latex?N(0,1)"> within a starting group: <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bu%7D%5Cmid%20Z_1=z%5Csim%20N%5Cbig(-%5Csqrt%7B(1-r)/2%7D%5C,z,%5C%20(1+r)/2%5Cbig)">.</li>
+<li><img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D=(Z_2-rZ_1)/%5Csqrt%7B1-r%5E2%7D"> compares the child with the <strong>expected</strong> value <img src="https://latex.codecogs.com/png.latex?rZ_1">. It is <img src="https://latex.codecogs.com/png.latex?N(0,1)"> given every <img src="https://latex.codecogs.com/png.latex?Z_1"> and uncorrelated with <img src="https://latex.codecogs.com/png.latex?Z_1">, so one cut-off such as the 5% thrive line (<img src="https://latex.codecogs.com/png.latex?-1.645">) means the same for every child.</li>
+<li>The expected value and typical error come from a reference cohort, so <img src="https://latex.codecogs.com/png.latex?Z%5E%7Bg%7D"> is only as good as the match between the reference and the child’s population.</li>
+</ul>
+<p>Next in this series: the extension to many measurements (<img src="https://latex.codecogs.com/png.latex?%5Cbeta=R%5E%7B-1%7Dr"> and the sweep operator), the correlation model for arbitrary ages, and the adaptive growth chart.</p>
+</section>
+<section id="appendix-code" class="level1">
+<h1>Appendix: reproduce the numbers</h1>
+<p>The code below is not executed when the page is rendered. It reproduces the key numbers and checks the proofs by simulation.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> math</span>
+<span id="cb1-2"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> numpy <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> np</span>
+<span id="cb1-3"></span>
+<span id="cb1-4">Phi <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">lambda</span> x: <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.5</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> math.erf(x <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> math.sqrt(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)))</span>
+<span id="cb1-5">c <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1.645</span></span>
+<span id="cb1-6"></span>
+<span id="cb1-7"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> su(r): <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> math.sqrt(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> r)      <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># sigma_u</span></span>
+<span id="cb1-8"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> sg(r): <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> math.sqrt(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> r <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> r)      <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># sigma_g</span></span>
+<span id="cb1-9"></span>
+<span id="cb1-10"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># --- Z^u flag rate by starting value (r = 0.7); Z^g gives Phi(c) = 5% for every start</span></span>
+<span id="cb1-11">r <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.7</span></span>
+<span id="cb1-12">k, s <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> math.sqrt((<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> r) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>), math.sqrt((<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> r) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span>
+<span id="cb1-13"><span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> z1 <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> [<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>, <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>]:</span>
+<span id="cb1-14">    <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(z1, <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">round</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">100</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> Phi((c <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> k <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> z1) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> s), <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>))</span>
+<span id="cb1-15"></span>
+<span id="cb1-16"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># --- The paper's Figure 1 child (Z-scores read approximately from the figure)</span></span>
+<span id="cb1-17">r, z2, z6 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.745</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.57</span>, <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.62</span></span>
+<span id="cb1-18"><span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Zg"</span>, <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">round</span>((z6 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> r <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> z2) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> sg(r), <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>), <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">" Zu"</span>, <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">round</span>((z6 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> z2) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> su(r), <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>))</span>
+<span id="cb1-19"></span>
+<span id="cb1-20"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># --- Simulation check of the proofs</span></span>
+<span id="cb1-21">rng <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.random.default_rng(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)</span>
+<span id="cb1-22">n, r <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4_000_000</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.7</span></span>
+<span id="cb1-23">z1 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> rng.standard_normal(n)</span>
+<span id="cb1-24">z2 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> r <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> z1 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> sg(r) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> rng.standard_normal(n)</span>
+<span id="cb1-25">zu <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> (z2 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> z1) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> su(r)</span>
+<span id="cb1-26">zg <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> (z2 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> r <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> z1) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> sg(r)</span>
+<span id="cb1-27"><span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"corr(Zu, Z1) ="</span>, <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">round</span>(np.corrcoef(zu, z1)[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>], <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>))   <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># about -0.387</span></span>
+<span id="cb1-28"><span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"corr(Zg, Z1) ="</span>, <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">round</span>(np.corrcoef(zg, z1)[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>], <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>))   <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># about 0</span></span>
+<span id="cb1-29"><span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> z <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> [<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>]:</span>
+<span id="cb1-30">    m <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> np.<span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">abs</span>(z1 <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> z) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&lt;</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.05</span></span>
+<span id="cb1-31">    <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(z, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"flag Zu %:"</span>, <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">round</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">100</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (zu[m] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&lt;</span> c).mean(), <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>),</span>
+<span id="cb1-32">             <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">" flag Zg %:"</span>, <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">round</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">100</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (zg[m] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&lt;</span> c).mean(), <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>))</span></code></pre></div></div>
+</section>
+<section id="references" class="level1">
+<h1>References</h1>
+<ul>
+<li>van Buuren S. (2023). Evaluation and prediction of individual growth trajectories. <em>Annals of Human Biology</em>, 50(1), 247–257. <a href="https://doi.org/10.1080/03014460.2023.2190619" class="uri">https://doi.org/10.1080/03014460.2023.2190619</a></li>
+<li>Cole TJ. (1995). Conditional reference charts to assess weight gain in British infants. <em>Archives of Disease in Childhood</em>, 73(1), 8–16.</li>
+<li>Wright C, Matthews J, Waterston A, Aynsley-Green A. (1994). What is a normal rate of weight gain in infancy? <em>Acta Paediatrica</em>, 83(4), 351–356.</li>
+<li>Herngreen W, van Buuren S, van Wieringen J, Reerink J, Verloove-Vanhorick S, Ruys J. (1994). Growth in length and weight from birth to 2 years of a representative sample of Netherlands children (born in 1988–89) related to socio-economic status and other background characteristics. <em>Annals of Human Biology</em>, 21(5), 449–463. (the SMOCC study)</li>
+</ul>
+
+
+</section>
+
+ ]]></description>
+  <category>statistics</category>
+  <category>longitudinal data</category>
+  <category>growth charts</category>
+  <category>normative modelling</category>
+  <guid>https://your-website-url.example.com/posts/conditional_sds_gain/</guid>
+  <pubDate>Sun, 04 Oct 2026 22:00:00 GMT</pubDate>
+  <media:content url="https://your-website-url.example.com/posts/conditional_sds_gain/figures/fig-landing-zones.png" medium="image" type="image/png" height="59" width="144"/>
+</item>
+</channel>
+</rss>
